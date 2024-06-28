@@ -94,20 +94,20 @@ RemoteButton SerialReader::getButton(const std::string& btnCode) {
 		{ "BF40FF00", RemoteButton::PAUSE },
 		{ "BC43FF00", RemoteButton::FAST_FORWARD },
 		{ "F807FF00", RemoteButton::DOWN },
-		{ "EA15FF00", RemoteButton::VOL },
+		{ "EA15FF00", RemoteButton::VOL_DOWN },
 		{ "F609FF00", RemoteButton::UP },
-		{ "E619FF00", RemoteButton::BTN_0 },
-		{ "F20DFF00", RemoteButton::EQ },
-		{ "F30CFF00", RemoteButton::REPT },
-		{ "E718FF00", RemoteButton::BTN_1 },
-		{ "A15EFF00", RemoteButton::BTN_2 },
-		{ "F708FF00", RemoteButton::BTN_3 },
-		{ "E31CFF00", RemoteButton::BTN_4 },
-		{ "A55AFF00", RemoteButton::BTN_5 },
-		{ "BD42FF00", RemoteButton::BTN_6 },
-		{ "AD52FF00", RemoteButton::BTN_7 },
-		{ "B54AFF00", RemoteButton::BTN_8 },
-		{ "B54AFF01", RemoteButton::BTN_9 }
+		{ "E916FF00", RemoteButton::BTN_0 },
+		{ "E619FF00", RemoteButton::EQ },
+		{ "F20DFF00", RemoteButton::REPT },
+		{ "F30CFF00", RemoteButton::BTN_1 },
+		{ "E718FF00", RemoteButton::BTN_2 },
+		{ "A15EFF00", RemoteButton::BTN_3 },
+		{ "F708FF00", RemoteButton::BTN_4 },
+		{ "E31CFF00", RemoteButton::BTN_5 },
+		{ "A55AFF00", RemoteButton::BTN_6 },
+		{ "BD42FF00", RemoteButton::BTN_7 },
+		{ "AD52FF00", RemoteButton::BTN_8 },
+		{ "B54AFF00", RemoteButton::BTN_9 }
 	};
 
 	auto it = hexToButtonMap.find(btnCode);

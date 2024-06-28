@@ -12,7 +12,7 @@ enum class RemoteButton {
 	PAUSE,
 	FAST_FORWARD,
 	DOWN,
-	VOL,
+	VOL_DOWN,
 	UP,
 	BTN_0,
 	EQ,
