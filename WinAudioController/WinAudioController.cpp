@@ -5,12 +5,28 @@
 #include <audiopolicy.h>
 #include <comdef.h>
 
+#include "SerialReader.h"
+
 void PrintHRErr(HRESULT hr) {
 	_com_error err(hr);
 	std::wcout << L"Error: " << err.ErrorMessage() << std::endl;
 }
 
-int main()
+int main() {
+	SerialReader reader("COM3");
+
+	while (true) {
+		std::string data = reader.readData();
+		if (!data.empty()) {
+			std::cout << data;
+		}
+		Sleep(100);
+	}
+
+	return 0;
+}
+
+int secondary()
 {
 	HRESULT hr = CoInitialize(NULL);
 	if (FAILED(hr)) {
