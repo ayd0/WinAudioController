@@ -12,85 +12,27 @@ void PrintHRErr(HRESULT hr) {
 	std::wcout << L"Error: " << err.ErrorMessage() << std::endl;
 }
 
-int main() {
-	SerialReader reader("COM3");
-
-	while (true) {
-		std::string data = reader.readData();
-		if (!data.empty()) {
-			std::cout << data;
-		}
-		Sleep(100);
+IAudioSessionEnumerator* GetSessionEnumerator(IAudioSessionManager2* pSessionManager) {
+	IAudioSessionEnumerator* pSessionEnumerator = NULL;
+	HRESULT hr = pSessionManager->GetSessionEnumerator(&pSessionEnumerator);
+	if (FAILED(hr)) {
+		std::cerr << "Failed to get session enumerator: " << std::hex << hr << std::endl;
+		PrintHRErr(hr);
+		return NULL;
 	}
-
-	return 0;
+	return pSessionEnumerator;
 }
 
-int secondary()
-{
-	HRESULT hr = CoInitialize(NULL);
-	if (FAILED(hr)) {
-		std::cerr << "COM library initialization failed: " << std::hex << hr << std::endl;
-		PrintHRErr(hr);
-		return -1;
-	}
+void ListAudioSessions(IAudioSessionManager2* pSessionManager) {
+	IAudioSessionEnumerator* pSessionEnumerator = GetSessionEnumerator(pSessionManager);
 
-	IMMDeviceEnumerator* pEnumerator = NULL;
-	hr = CoCreateInstance(
-		__uuidof(MMDeviceEnumerator), NULL,
-		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator),
-		(void**)&pEnumerator);
-	if (FAILED(hr)) {
-		std::cerr << "Failed to create device enumerator: " << std::hex << hr << std::endl;
-		PrintHRErr(hr);
-		CoUninitialize();
-		return -1;
-	}
-
-	IMMDevice* pDevice = NULL;
-	hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
-	if (FAILED(hr)) {
-		std::cerr << "Failed to get default audio endpoint: " << std::hex << hr << std::endl;
-		PrintHRErr(hr);
-		pEnumerator->Release();
-		CoUninitialize();
-		return -1;
-	}
-
-	IAudioSessionManager2* pSessionManager = NULL;
-	hr = pDevice->Activate(__uuidof(IAudioSessionManager2), CLSCTX_ALL, NULL, (void**)&pSessionManager);
-	if (FAILED(hr)) {
-		std::cerr << "Failed to get audio session manager: " << std::hex << hr << std::endl;
-		PrintHRErr(hr);
-		pDevice->Release();
-		pEnumerator->Release();
-		CoUninitialize();
-		return -1;
-	}
-
-	IAudioSessionEnumerator* pSessionEnumerator = NULL;
-	hr = pSessionManager->GetSessionEnumerator(&pSessionEnumerator);
-	if (FAILED(hr)) {
-		std::cerr << "Failed to get session enumerator" << std::hex << hr << std::endl;
-		PrintHRErr(hr);
-		pSessionManager->Release();
-		pDevice->Release();
-		pEnumerator->Release();
-		CoUninitialize();
-		return -1;
-	}
-	
 	int sessionCount = 0;
-	hr = pSessionEnumerator->GetCount(&sessionCount);
+	HRESULT hr = pSessionEnumerator->GetCount(&sessionCount);
 	if (FAILED(hr)) {
 		std::cerr << "Failed to get session count: " << std::hex << hr << std::endl;
 		PrintHRErr(hr);
 		pSessionEnumerator->Release();
-		pSessionManager->Release();
-		pDevice->Release();
-		pEnumerator->Release();
-		CoUninitialize();
-		return -1;
+		return;
 	}
 
 	for (int i = 0; i < sessionCount; ++i) {
@@ -148,6 +90,7 @@ int secondary()
 				wprintf(L"\tCurrent Volume: %f\n", currentVolume);
 
 				float setVolume = 0.5f * currentVolume;
+				/*
 				hr = pAudioVolume->SetMasterVolume(setVolume, NULL);
 				if (SUCCEEDED(hr)) {
 					wprintf(L"\tVolume set to: %f", setVolume);
@@ -156,6 +99,7 @@ int secondary()
 					std::cerr << "\tFailed to set volume: " << std::hex << hr << std::endl;
 					PrintHRErr(hr);
 				}
+				*/
 			}
 			else {
 				std::cerr << "\tFailed to get current volume: " << std::hex << hr << std::endl;
@@ -171,7 +115,71 @@ int secondary()
 		pSessionControl2->Release();
 		pSessionControl->Release();
 	}
+	pSessionEnumerator->Release();
+}
 
+int main()
+{
+	IMMDeviceEnumerator* pEnumerator = NULL;
+	IMMDevice* pDevice = NULL;
+	IAudioSessionManager2* pSessionManager = NULL;
+	IAudioSessionEnumerator* pSessionEnumerator = NULL;
+
+	HRESULT hr = CoInitialize(NULL);
+	if (FAILED(hr)) {
+		std::cerr << "COM library initialization failed: " << std::hex << hr << std::endl;
+		PrintHRErr(hr);
+		return -1;
+	}
+
+	hr = CoCreateInstance(
+		__uuidof(MMDeviceEnumerator), NULL,
+		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator),
+		(void**)&pEnumerator);
+	if (FAILED(hr)) {
+		std::cerr << "Failed to create device enumerator: " << std::hex << hr << std::endl;
+		PrintHRErr(hr);
+		CoUninitialize();
+		return -1;
+	}
+
+	hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
+	if (FAILED(hr)) {
+		std::cerr << "Failed to get default audio endpoint: " << std::hex << hr << std::endl;
+		PrintHRErr(hr);
+		pEnumerator->Release();
+		CoUninitialize();
+		return -1;
+	}
+
+	hr = pDevice->Activate(__uuidof(IAudioSessionManager2), CLSCTX_ALL, NULL, (void**)&pSessionManager);
+	if (FAILED(hr)) {
+		std::cerr << "Failed to get audio session manager: " << std::hex << hr << std::endl;
+		PrintHRErr(hr);
+		pDevice->Release();
+		pEnumerator->Release();
+		CoUninitialize();
+		return -1;
+	}
+
+	SerialReader reader("COM3");
+
+	while (true) {
+		std::string data = reader.readData();
+		if (!data.empty()) {
+			std::cout << data << std::endl;
+
+			RemoteButton btn = reader.getButton(data);
+			if (btn == RemoteButton::POWER) {
+				std::cout << "POWER" << std::endl;
+				ListAudioSessions(pSessionManager);
+			}
+			switch (btn) {
+			}
+		}
+		Sleep(100);
+	}
+	
 	pSessionEnumerator->Release();
 	pSessionManager->Release();
 	pDevice->Release();
