@@ -49,7 +49,7 @@ std::string SerialReader::trimData(const std::string& str) {
 	return str.substr(first, last - first + 1);
 }
 
-std::string SerialReader::readData() {
+void SerialReader::readData() {
 	const int bufferSize = 1024;
 	char buffer[bufferSize];
 	DWORD bytesRead;
@@ -62,7 +62,8 @@ std::string SerialReader::readData() {
 				if (buffer[i] == '\n') {
 					collectedData = this->buffer;
 					this->buffer.clear();
-					return trimData(collectedData);
+					data = trimData(collectedData);
+					return;
 				}
 				else {
 					this->buffer += buffer[i];
@@ -75,7 +76,7 @@ std::string SerialReader::readData() {
 		ErrorExit("Error reading from serial port");
 	}
 
-	return "";
+	data = "";
 }
 
 void SerialReader::closePort() {
@@ -85,7 +86,7 @@ void SerialReader::closePort() {
 	}
 }
 
-RemoteButton SerialReader::getButton(const std::string& btnCode) {
+RemoteButton SerialReader::getButton() {
 	static const std::unordered_map<std::string, RemoteButton> hexToButtonMap = {
 		{ "BA45FF00", RemoteButton::POWER },
 		{ "B946FF00", RemoteButton::VOL_UP },
@@ -110,7 +111,7 @@ RemoteButton SerialReader::getButton(const std::string& btnCode) {
 		{ "B54AFF00", RemoteButton::BTN_9 }
 	};
 
-	auto it = hexToButtonMap.find(btnCode);
+	auto it = hexToButtonMap.find(data);
 	if (it != hexToButtonMap.end()) {
 		return it->second;
 	}

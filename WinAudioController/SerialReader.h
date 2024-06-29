@@ -31,13 +31,14 @@ enum class RemoteButton {
 
 class SerialReader {
 public:
-
 	SerialReader(const std::string& portName);
 	~SerialReader();
 
-	std::string readData();
+	void readData();
 	void closePort();
-	RemoteButton getButton(const std::string& btnCode);
+	RemoteButton getButton();
+
+	std::string data;
 
 private:
 	void ErrorExit(const char* err);
