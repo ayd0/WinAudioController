@@ -68,25 +68,34 @@ void PrintAudioSession(IAudioSessionControl2* pSessionControl2, int idx, bool pr
 		return;
 	}
 
-	LPWSTR displayName = NULL;
-	hr = pSessionControl2->GetDisplayName(&displayName);
-	if (SUCCEEDED(hr) && displayName && displayName[0] != L'\0') {
-		// wprintf(L"Session %d: Process ID = %d, Display Name = %s\n", idx, processId, displayName ? displayName : L"Unknown");
-		wprintf(L"%d: Display Name = %s\n", idx, displayName ? displayName : L"Unknown");
-		CoTaskMemFree(displayName);
-	}
-	else {
-		LPWSTR sessionIdentifier = NULL;
-		hr = pSessionControl2->GetSessionIdentifier(&sessionIdentifier);
-		if (SUCCEEDED(hr) && sessionIdentifier) {
-			// wprintf(L"Session %d: Process ID = %d, Session Identifier = %s\n", idx, processId, sessionIdentifier);
-			wprintf(L"%d: Session Identifier = %s\n", idx, sessionIdentifier);
-			CoTaskMemFree(sessionIdentifier);
+	LPWSTR sessionIdentifier = NULL;
+	hr = pSessionControl2->GetSessionIdentifier(&sessionIdentifier);
+	if (SUCCEEDED(hr) && sessionIdentifier) {
+		std::wstring ident = std::wstring(sessionIdentifier);
+		size_t lastBsPos = ident.find_last_of(L'\\');
+		size_t PerBPos = ident.find(L"%b");
+
+		if (lastBsPos != std::wstring::npos && PerBPos != std::wstring::npos && PerBPos > lastBsPos) {
+			std::wstring extractedName = ident.substr(lastBsPos + 1, PerBPos - lastBsPos - 1);
+			wprintf(L"%d: %s\n", idx, extractedName.c_str());
 		}
 		else {
-			// wprintf(L"%d: Display Name = Unknown\n", idx, processId);
-			wprintf(L"Session %d: Process ID = %d, Display Name = Unknown\n", idx);
+			LPWSTR displayName = NULL;
+			hr = pSessionControl2->GetDisplayName(&displayName);
+			if (SUCCEEDED(hr) && displayName && displayName[0] != L'\0') {
+				// wprintf(L"Session %d: Process ID = %d, Display Name = %s\n", idx, processId, displayName ? displayName : L"Unknown");
+				wprintf(L"%d: %s\n", idx, displayName ? displayName : L"Unknown");
+				CoTaskMemFree(displayName);
+			}
+			else {
+				wprintf(L"%d: %s\n", idx, sessionIdentifier);
+			}
 		}
+
+		CoTaskMemFree(sessionIdentifier);
+	}
+	else {
+		wprintf(L"Session %d: Process ID = %d, Display Name = Unknown\n", idx);
 	}
 	if (printVol) {
 		ISimpleAudioVolume* pAudioVolume = GetSimpleAudioVolume(pSessionControl2);
@@ -94,7 +103,7 @@ void PrintAudioSession(IAudioSessionControl2* pSessionControl2, int idx, bool pr
 			float currentVolume = 0.0f;
 			hr = pAudioVolume->GetMasterVolume(&currentVolume);
 			if (SUCCEEDED(hr)) {
-				wprintf(L"\tVolume: %f\n", currentVolume);
+				wprintf(L"Vol: %f\n", currentVolume);
 			}
 			else {
 				std::cerr << "\tFailed to get current volume: " << std::hex << hr << std::endl;
@@ -127,7 +136,7 @@ void SetAudioSessionVolume(IAudioSessionControl2* pSessionControl2, RemoteButton
 			}
 			hr = pAudioVolume->SetMasterVolume(setVolume, NULL);
 			if (SUCCEEDED(hr)) {
-				wprintf(L"\tVolume set to: %f\n", setVolume);
+				wprintf(L"Vol: %f\n", setVolume);
 			}
 			else {
 				std::cerr << "\tFailed to set volume: " << std::hex << hr << std::endl;
@@ -146,7 +155,7 @@ void SetAudioSessionVolume(IAudioSessionControl2* pSessionControl2, RemoteButton
 	}
 }
 
-void HandleAudioSessions(IAudioSessionManager2* pSessionManager, int sessionTarget, bool printVol=true, bool updateVol = false, RemoteButton btn = RemoteButton::UNKNOWN) {
+void HandleAudioSessions(IAudioSessionManager2* pSessionManager, int sessionTarget, bool printName=true, bool printVol=true, bool updateVol = false, RemoteButton btn = RemoteButton::UNKNOWN) {
 	IAudioSessionEnumerator* pSessionEnumerator = GetSessionEnumerator(pSessionManager);
 
 	int sessionCount = 0;
@@ -161,7 +170,7 @@ void HandleAudioSessions(IAudioSessionManager2* pSessionManager, int sessionTarg
 	if (sessionTarget == -1) {
 		for (int i = 0; i < sessionCount; ++i) {
 			IAudioSessionControl2* pSessionControl2 = GetSessionControl2(pSessionEnumerator, i);
-			if (pSessionControl2) {
+			if (pSessionControl2 && printName) {
 				PrintAudioSession(pSessionControl2, i, printVol);
 			}
 			if (updateVol && pSessionControl2) {
@@ -173,7 +182,7 @@ void HandleAudioSessions(IAudioSessionManager2* pSessionManager, int sessionTarg
 	}
 	else if (sessionTarget < sessionCount) {
 		IAudioSessionControl2* pSessionControl2 = GetSessionControl2(pSessionEnumerator, sessionTarget);
-		if (pSessionControl2) {
+		if (pSessionControl2 && printName) {
 			PrintAudioSession(pSessionControl2, sessionTarget, printVol);
 		}
 		if (updateVol && pSessionControl2) {
@@ -184,13 +193,13 @@ void HandleAudioSessions(IAudioSessionManager2* pSessionManager, int sessionTarg
 	pSessionEnumerator->Release();
 }
 
-void HandleBtn(RemoteButton btn, IAudioSessionManager2* pSessionManager, int selectedSession, std::string& data) {
+void HandleBtn(RemoteButton btn, IAudioSessionManager2* pSessionManager, int& selectedSession, std::string& data) {
 	switch (btn) {
 		case RemoteButton::POWER :
 			HandleAudioSessions(pSessionManager, -1, false);
 			break;
 		case RemoteButton::VOL_UP :
-			HandleAudioSessions(pSessionManager, selectedSession, false, true, btn);
+			HandleAudioSessions(pSessionManager, selectedSession, false, false, true, btn);
 			break;
 		case RemoteButton::FUNC :
 			std::cout << "FUNC" << std::endl;
@@ -205,13 +214,13 @@ void HandleBtn(RemoteButton btn, IAudioSessionManager2* pSessionManager, int sel
 			std::cout << "FAST_FORWARD" << std::endl;
 			break;
 		case RemoteButton::DOWN :
-			HandleAudioSessions(pSessionManager, selectedSession, false, true, btn);
+			HandleAudioSessions(pSessionManager, selectedSession, false, false, true, btn);
 			break;
 		case RemoteButton::VOL_DOWN :
-			HandleAudioSessions(pSessionManager, selectedSession, false, true, btn);
+			HandleAudioSessions(pSessionManager, selectedSession, false, false, true, btn);
 			break;
 		case RemoteButton::UP :
-			HandleAudioSessions(pSessionManager, selectedSession, false, true, btn);
+			HandleAudioSessions(pSessionManager, selectedSession, false, false, true, btn);
 			break;
 		case RemoteButton::BTN_0 :
 			HandleAudioSessions(pSessionManager, 0);
@@ -312,7 +321,7 @@ int main()
 		return -1;
 	}
 
-	HandleAudioSessions(pSessionManager, -1, false);
+	HandleAudioSessions(pSessionManager, -1, true, false);
 
 	int selectedSession = 0;
 	SerialReader reader("COM3");
