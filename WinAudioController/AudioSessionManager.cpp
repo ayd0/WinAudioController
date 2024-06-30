@@ -1,6 +1,6 @@
 #include "AudioSessionManager.h"
 
-AudioSessionManager::AudioSessionManager() : selectedSession(0), sessionCount(0), reader("COM3") {
+AudioSessionManager::AudioSessionManager() : selectedSession(0), sessionCount(0), handler("COM3") {
 	InitializeASM();
 }
 AudioSessionManager::~AudioSessionManager() {
@@ -9,9 +9,9 @@ AudioSessionManager::~AudioSessionManager() {
 
 void AudioSessionManager::Listen(int delay) {
 	while (true) {
-		reader.readData();
-		if (!reader.data.empty()) {
-			selectedBtn = reader.getButton();
+		handler.readData();
+		if (!handler.data.empty()) {
+			selectedBtn = handler.getButton();
 			HandleBtn();
 		}
 		Sleep(delay);
@@ -178,11 +178,11 @@ void AudioSessionManager::HandleBtn() {
 			selectedSession = 9;
 			break;
 		case RemoteButton::UNKNOWN :
-			std::cerr << "Unknown button: " << reader.data << std::endl;
+			std::cerr << "Unknown button: " << handler.data << std::endl;
 			break;
 		default:
-			std::cout << reader.data << std::endl;
-			std::cout << "LENGTH: " << reader.data.size() << std::endl;
+			std::cout << handler.data << std::endl;
+			std::cout << "LENGTH: " << handler.data.size() << std::endl;
 	}
 }
 
@@ -270,6 +270,7 @@ void AudioSessionManager::PrintAudioSession(int idx, bool printVol) {
 
 	LPWSTR sessionIdentifier = NULL;
 	hr = pSessionControl2->GetSessionIdentifier(&sessionIdentifier);
+	std::string sessionName;
 	if (SUCCEEDED(hr) && sessionIdentifier) {
 		std::wstring ident = std::wstring(sessionIdentifier);
 		size_t lastBsPos = ident.find_last_of(L'\\');
@@ -278,16 +279,19 @@ void AudioSessionManager::PrintAudioSession(int idx, bool printVol) {
 		if (lastBsPos != std::wstring::npos && PerBPos != std::wstring::npos && PerBPos > lastBsPos) {
 			std::wstring extractedName = ident.substr(lastBsPos + 1, PerBPos - lastBsPos - 1);
 			wprintf(L"%d: %s\n", idx, extractedName.c_str());
+			sessionName = std::string(extractedName.begin(), extractedName.end());
 		}
 		else {
 			LPWSTR displayName = NULL;
 			hr = pSessionControl2->GetDisplayName(&displayName);
 			if (SUCCEEDED(hr) && displayName && displayName[0] != L'\0') {
 				wprintf(L"%d: %s\n", idx, displayName ? displayName : L"Unknown");
+				sessionName = std::string(displayName, displayName + wcslen(displayName));
 				CoTaskMemFree(displayName);
 			}
 			else {
 				wprintf(L"%d: %s\n", idx, sessionIdentifier);
+				sessionName = std::string(sessionIdentifier, sessionIdentifier + wcslen(sessionIdentifier));
 			}
 		}
 
@@ -295,7 +299,14 @@ void AudioSessionManager::PrintAudioSession(int idx, bool printVol) {
 	}
 	else {
 		wprintf(L"Session %d: Process ID = %d, Display Name = Unknown\n", idx);
+		sessionName = "Unknown";
 	}
+	if (sessionName.size() > 16) {
+		sessionName = sessionName.substr(0, 15);
+	}
+	sessionName += "\n";
+	handler.writeData(sessionName);
+
 	if (printVol) {
 		GetSimpleAudioVolume();
 		if (pAudioVolume) {
@@ -336,6 +347,8 @@ void AudioSessionManager::SetAudioSessionVolume() {
 			hr = pAudioVolume->SetMasterVolume(setVolume, NULL);
 			if (SUCCEEDED(hr)) {
 				wprintf(L"Vol: %f\n", setVolume);
+				std::string vol = "Vol: " + std::to_string(currentVolume) + '\n';
+				handler.writeData(vol);
 			}
 			else {
 				std::cerr << "\tFailed to set volume: " << std::hex << hr << std::endl;

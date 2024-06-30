@@ -129,12 +129,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioSessionManager.cpp" />
-    <ClCompile Include="SerialReader.cpp" />
+    <ClCompile Include="SerialHandler.cpp" />
     <ClCompile Include="WinAudioController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AudioSessionManager.h" />
-    <ClInclude Include="SerialReader.h" />
+    <ClInclude Include="SerialHandler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

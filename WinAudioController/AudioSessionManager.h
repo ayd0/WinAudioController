@@ -10,7 +10,7 @@
 #include <locale>
 #include <codecvt>
 
-#include "SerialReader.h"
+#include "SerialHandler.h"
 
 class AudioSessionManager {
 	IMMDeviceEnumerator* pEnumerator;
@@ -23,7 +23,7 @@ class AudioSessionManager {
 
 	int selectedSession;
 	int sessionCount;
-	SerialReader reader;
+	SerialHandler handler;
 	RemoteButton selectedBtn;
 	HRESULT hr;
 

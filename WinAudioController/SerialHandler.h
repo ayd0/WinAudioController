@@ -1,5 +1,5 @@
-#ifndef SERIAL_READER
-#define SERIAL_READER
+#ifndef SERIAL_HANDLER
+#define SERIAL_HANDLER
 
 #include <string>
 #include <windows.h>
@@ -29,12 +29,13 @@ enum class RemoteButton {
 	UNKNOWN
 };
 
-class SerialReader {
+class SerialHandler {
 public:
-	SerialReader(const std::string& portName);
-	~SerialReader();
+	SerialHandler(const std::string& portName);
+	~SerialHandler();
 
 	void readData();
+	void writeData(const std::string& writeStr);
 	void closePort();
 	RemoteButton getButton();
 
@@ -48,4 +49,4 @@ private:
 	std::string buffer;
 };
 
-#endif // SERIAL_READER
+#endif // SERIAL_HANDLER

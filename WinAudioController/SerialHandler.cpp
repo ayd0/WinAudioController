@@ -1,12 +1,12 @@
-#include "SerialReader.h"
+#include "SerialHandler.h"
 
 #include <iostream>
 #include <unordered_map>
 
-SerialReader::SerialReader(const std::string& portName) {
+SerialHandler::SerialHandler(const std::string& portName) {
 	std::wstring wPortName(portName.begin(), portName.end());
 
-	hSerial = CreateFile(wPortName.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	hSerial = CreateFile(wPortName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (hSerial == INVALID_HANDLE_VALUE) {
 		ErrorExit("Error opening serial port");
@@ -31,16 +31,16 @@ SerialReader::SerialReader(const std::string& portName) {
 	}
 }
 
-SerialReader::~SerialReader() {
+SerialHandler::~SerialHandler() {
 	closePort();
 }
 
-void SerialReader::ErrorExit(const char* err) {
+void SerialHandler::ErrorExit(const char* err) {
 	std::cerr << err << std::endl;
 	ExitProcess(1);
 }
 
-std::string SerialReader::trimData(const std::string& str) {
+std::string SerialHandler::trimData(const std::string& str) {
 	size_t first = str.find_first_not_of(" \t\n\r");
 	if (first == std::string::npos) {
 		return "";
@@ -49,7 +49,7 @@ std::string SerialReader::trimData(const std::string& str) {
 	return str.substr(first, last - first + 1);
 }
 
-void SerialReader::readData() {
+void SerialHandler::readData() {
 	const int bufferSize = 1024;
 	char buffer[bufferSize];
 	DWORD bytesRead;
@@ -79,14 +79,22 @@ void SerialReader::readData() {
 	data = "";
 }
 
-void SerialReader::closePort() {
+void SerialHandler::writeData(const std::string& writeStr) {
+	DWORD bytesWritten;
+	if (!WriteFile(hSerial, writeStr.c_str(), writeStr.size(), &bytesWritten, NULL)) {
+		CloseHandle(hSerial);
+		ErrorExit("Error writing to serial port");
+	}
+}
+
+void SerialHandler::closePort() {
 	if (hSerial != INVALID_HANDLE_VALUE) {
 		CloseHandle(hSerial);
 		hSerial = INVALID_HANDLE_VALUE;
 	}
 }
 
-RemoteButton SerialReader::getButton() {
+RemoteButton SerialHandler::getButton() {
 	static const std::unordered_map<std::string, RemoteButton> hexToButtonMap = {
 		{ "BA45FF00", RemoteButton::POWER },
 		{ "B946FF00", RemoteButton::VOL_UP },

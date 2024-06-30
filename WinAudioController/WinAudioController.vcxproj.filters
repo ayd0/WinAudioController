@@ -18,7 +18,7 @@
     <ClCompile Include="WinAudioController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SerialReader.cpp">
+    <ClCompile Include="SerialHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AudioSessionManager.cpp">
@@ -26,7 +26,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SerialReader.h">
+    <ClInclude Include="SerialHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="AudioSessionManager.h">
