@@ -136,6 +136,9 @@
     <ClInclude Include="AudioSessionManager.h" />
     <ClInclude Include="SerialHandler.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\OneDrive\Documents\Arduino\IR_Volume_Controller\IRWinVolCon\IRWinVolCon.ino" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
